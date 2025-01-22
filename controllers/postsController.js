@@ -14,27 +14,33 @@ const index = (req, res) => {
 const show = (req, res) => {
     // recuperiamo l'id dall' URL
     const id = req.params.id;
+    // prepariamo la query per il post
     const postSql = ` 
         SELECT posts.* FROM posts 
         WHERE id = ? 
     `;
+    // prepariamo la query per i tags del post con join 
     const tagsSql = `
         SELECT tags.* FROM tags 
         JOIN post_tag ON tags.id = post_tag.tag_id
         JOIN posts ON post_tag.post_id = posts.id
         WHERE posts.id = ?
     `;
+    // eseguiamo la prima query per il post
     connection.query(postSql, [id], (err, pizzaResults) => {
         if (err)
             return res.status(500).json({ error: "Database query failed" });
         if (pizzaResults.length === 0)
             return res.status(404).json({ error: "post not found" });
 
+        // recuperiamo il post
         const post = pizzaResults[0];
 
+        // se è andata bene, eseguaimo la seconda query per i tags
         connection.query(tagsSql, [id], (err, tagsResults) => {
             if (err)
                 return res.status(500).json({ error: "Database query failed" });
+            // aggiungiamo i tags del post
             post.tags = tagsResults;
             res.json(post);
         });
@@ -44,7 +50,7 @@ const show = (req, res) => {
 const destroy = (req, res) => {
     // recuperiamo l'id dall' URL
     const { id } = req.params;
-    //Eliminiamo la pizza dal menu
+    //Eliminiamo il post dal blog
     connection.query("DELETE FROM posts WHERE id = ?", [id], (err) => {
         if (err)
             return res.status(500).json({ error: "Failed to delete post" });
