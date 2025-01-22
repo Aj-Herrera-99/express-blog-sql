@@ -14,13 +14,30 @@ const index = (req, res) => {
 const show = (req, res) => {
     // recuperiamo l'id dall' URL
     const id = req.params.id;
-    const sql = "SELECT * FROM posts WHERE id = ?";
-    connection.query(sql, [id], (err, results) => {
+    const postSql = ` 
+        SELECT posts.* FROM posts 
+        WHERE id = ? 
+    `;
+    const tagsSql = `
+        SELECT tags.* FROM tags 
+        JOIN post_tag ON tags.id = post_tag.tag_id
+        JOIN posts ON post_tag.post_id = posts.id
+        WHERE posts.id = ?
+    `;
+    connection.query(postSql, [id], (err, pizzaResults) => {
         if (err)
             return res.status(500).json({ error: "Database query failed" });
-        if (results.length === 0)
+        if (pizzaResults.length === 0)
             return res.status(404).json({ error: "post not found" });
-        res.json(results[0]);
+
+        const post = pizzaResults[0];
+
+        connection.query(tagsSql, [id], (err, tagsResults) => {
+            if (err)
+                return res.status(500).json({ error: "Database query failed" });
+            post.tags = tagsResults;
+            res.json(post);
+        });
     });
 };
 
